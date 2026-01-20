@@ -4,6 +4,7 @@ from copy import deepcopy
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
+
 # =========================
 # CONSTANTES
 # =========================
@@ -166,14 +167,14 @@ def build_routes(orders, vehicles, depot):
         improved = True
         while improved:
             improved = False
-            best_gain = float("inf")
+            best_cost = float("inf")
             best_o = None
 
             for o in remaining:
                 test = route + [o]
                 v, c = best_vehicle(test, vehicles, depot)
-                if v is not None and c < best_gain:
-                    best_gain = c
+                if v is not None and c < best_cost:
+                    best_cost = c
                     best_o = o
 
             if best_o:
@@ -185,6 +186,91 @@ def build_routes(orders, vehicles, depot):
         routes.append({'orders': route, 'vehicle': v})
 
     return routes
+
+
+# =========================
+# 2-OPT INTRA-ROUTE
+# =========================
+
+def two_opt_route(route, vehicles, depot):
+    best_route = route[:]
+    best_v, best_cost = best_vehicle(best_route, vehicles, depot)
+    improved = True
+
+    while improved:
+        improved = False
+        n = len(best_route)
+
+        for i in range(n-1):
+            for j in range(i+2, n):
+                new_route = best_route[:i] + best_route[i:j][::-1] + best_route[j:]
+                v, c = best_vehicle(new_route, vehicles, depot)
+                if v and c < best_cost:
+                    best_route = new_route
+                    best_cost = c
+                    improved = True
+                    break
+            if improved:
+                break
+
+    return best_route
+
+
+def improve_routes_2opt(routes, vehicles, depot):
+    for r in routes:
+        r['orders'] = two_opt_route(r['orders'], vehicles, depot)
+        r['vehicle'], _ = best_vehicle(r['orders'], vehicles, depot)
+
+
+# =========================
+# RELOCATE INTER-ROUTES
+# =========================
+
+def relocate(routes, vehicles, depot):
+    improved = True
+
+    while improved:
+        improved = False
+
+        for i in range(len(routes)):
+            for j in range(len(routes)):
+                if i == j:
+                    continue
+
+                r1 = routes[i]
+                r2 = routes[j]
+
+                for k in range(len(r1['orders'])):
+                    order = r1['orders'][k]
+                    new_r1 = r1['orders'][:k] + r1['orders'][k+1:]
+
+                    if not new_r1:
+                        continue
+
+                    for pos in range(len(r2['orders'])+1):
+                        new_r2 = r2['orders'][:pos] + [order] + r2['orders'][pos:]
+
+                        v1, c1 = best_vehicle(new_r1, vehicles, depot)
+                        v2, c2 = best_vehicle(new_r2, vehicles, depot)
+
+                        if v1 and v2:
+                            old_cost = (
+                                route_cost(r1['orders'], r1['vehicle'], depot) +
+                                route_cost(r2['orders'], r2['vehicle'], depot)
+                            )
+                            new_cost = c1 + c2
+
+                            if new_cost < old_cost:
+                                routes[i] = {'orders': new_r1, 'vehicle': v1}
+                                routes[j] = {'orders': new_r2, 'vehicle': v2}
+                                improved = True
+                                break
+                    if improved:
+                        break
+                if improved:
+                    break
+            if improved:
+                break
 
 
 # =========================
@@ -208,34 +294,32 @@ def save_routes(routes, filename):
 # MAIN
 # =========================
 
-def creer_solution(solution_file_name,instance_file_name):
-    with open(instance_file_name, newline='', encoding="utf-8") as f:
-        depot, orders = read_instance(instance_file_name)
-        phi0 = depot['coord'][0]
-        depot['coord'] = geo_to_meters(depot['coord'], phi0)
-        for o in orders:
-            o['coord'] = geo_to_meters(o['coord'], phi0)
+def creer_solution(solution_file_name, instance_file_name):
+    depot, orders = read_instance(instance_file_name)
 
-        routes = build_routes(orders, vehicles, depot)
-        save_routes(routes, solution_file_name)
+    phi0 = depot['coord'][0]
+    depot['coord'] = geo_to_meters(depot['coord'], phi0)
+    for o in orders:
+        o['coord'] = geo_to_meters(o['coord'], phi0)
+
+    routes = build_routes(orders, vehicles, depot)
+
+    improve_routes_2opt(routes, vehicles, depot)
+    relocate(routes, vehicles, depot)
+
+    save_routes(routes, solution_file_name)
+
+
+# =========================
+# RUN
+# =========================
 
 if __name__ == "__main__":
-    vehicles = read_vehicles("juliaEvaluator/data-projet/instances/vehicles.csv")
+    vehicles = read_vehicles(BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "vehicles.csv")
 
-    instance_path = BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_10.csv"
+    for i in range(1, 11):
+        inst = BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / f"instance_{i:02d}.csv"
+        sol = f"solution_{i:02d}.csv"
+        creer_solution(sol, inst)
 
-    creer_solution("solution_10.csv", instance_path)
-
-
-    creer_solution("solution_01.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_01.csv")
-    creer_solution("solution_02.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_02.csv")
-    creer_solution("solution_03.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_03.csv")
-    creer_solution("solution_04.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_04.csv")
-    creer_solution("solution_05.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_05.csv")
-    creer_solution("solution_06.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_06.csv")
-    creer_solution("solution_07.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_07.csv")
-    creer_solution("solution_08.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_08.csv")
-    creer_solution("solution_09.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_09.csv")
-    creer_solution("solution_10.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_10.csv")
-
-    print("✔ Solutions générées")
+    print("✔ Solutions générées avec 2-opt + relocate")
