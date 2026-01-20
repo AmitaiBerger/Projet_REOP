@@ -1,7 +1,9 @@
 import csv
 import math
 from copy import deepcopy
+from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
 # =========================
 # CONSTANTES
 # =========================
@@ -207,27 +209,33 @@ def save_routes(routes, filename):
 # =========================
 
 def creer_solution(solution_file_name,instance_file_name):
-    depot, orders = read_instance(instance_file_name)
-    phi0 = depot['coord'][0]
-    depot['coord'] = geo_to_meters(depot['coord'], phi0)
-    for o in orders:
-        o['coord'] = geo_to_meters(o['coord'], phi0)
+    with open(instance_file_name, newline='', encoding="utf-8") as f:
+        depot, orders = read_instance(instance_file_name)
+        phi0 = depot['coord'][0]
+        depot['coord'] = geo_to_meters(depot['coord'], phi0)
+        for o in orders:
+            o['coord'] = geo_to_meters(o['coord'], phi0)
 
-    routes = build_routes(orders, vehicles, depot)
-    save_routes(routes, solution_file_name)
+        routes = build_routes(orders, vehicles, depot)
+        save_routes(routes, solution_file_name)
 
 if __name__ == "__main__":
     vehicles = read_vehicles("juliaEvaluator/data-projet/instances/vehicles.csv")
-    creer_solution("solution_01.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_01.csv")
 
-    creer_solution("solution_02.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_02.csv")
-    creer_solution("solution_03.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_03.csv")
-    creer_solution("solution_04.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_04.csv")
-    creer_solution("solution_05.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_05.csv")
-    creer_solution("solution_06.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_06.csv")
-    creer_solution("solution_07.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_07.csv")
-    creer_solution("solution_08.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_08.csv")
-    creer_solution("solution_09.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_09.csv")
-    creer_solution("solution_10.csv",r"C:\Users\amita\OneDrive\Bureau\REOP\Projet_REOP\juliaEvaluator\data-projet\instances\instance_10.csv")
+    instance_path = BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_10.csv"
+
+    creer_solution("solution_10.csv", instance_path)
+
+
+    creer_solution("solution_01.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_01.csv")
+    creer_solution("solution_02.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_02.csv")
+    creer_solution("solution_03.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_03.csv")
+    creer_solution("solution_04.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_04.csv")
+    creer_solution("solution_05.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_05.csv")
+    creer_solution("solution_06.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_06.csv")
+    creer_solution("solution_07.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_07.csv")
+    creer_solution("solution_08.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_08.csv")
+    creer_solution("solution_09.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_09.csv")
+    creer_solution("solution_10.csv",BASE_DIR / "juliaEvaluator" / "data-projet" / "instances" / "instance_10.csv")
 
     print("✔ Solutions générées")
